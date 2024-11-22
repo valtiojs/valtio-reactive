@@ -29,20 +29,14 @@ unstable_replaceInternalFunction(
     },
 );
 
-const callbackStack = [new Set<() => void>()];
-let callbackPromise: Promise<void> | undefined;
+const callbackStack: Set<() => void>[] = [];
 
 const registerCallback = (callback: () => void) => {
-  const callbacks = callbackStack[callbackStack.length - 1]!;
-  callbacks.add(callback);
-  if (!callbackPromise && callbackStack.length === 1) {
-    callbackPromise = Promise.resolve().then(() => {
-      callbackPromise = undefined;
-      for (const callback of callbacks) {
-        callback();
-      }
-      callbacks.clear();
-    });
+  if (callbackStack.length) {
+    callbackStack[callbackStack.length - 1]!.add(callback);
+  } else {
+    // invoke immediately
+    callback();
   }
 };
 

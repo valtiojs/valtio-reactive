@@ -1,7 +1,7 @@
 {
   "name": "valtio-reactive",
   "description": "valtio-reactive makes Valtio a reactive library",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "author": "Daishi Kato",
   "repository": {

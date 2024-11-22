@@ -37,13 +37,10 @@ describe('watch', () => {
     });
     expect(data).toEqual([0]);
     ++state.nested.count;
-    await new Promise<void>((r) => setTimeout(r));
     expect(data).toEqual([0, 1]);
     ++state.count;
-    await new Promise<void>((r) => setTimeout(r));
     expect(data).toEqual([0, 1]);
     ++state.nested.anotherCount;
-    await new Promise<void>((r) => setTimeout(r));
     expect(data).toEqual([0, 1]);
     unwatch();
   });
@@ -59,16 +56,19 @@ describe('watch with batch', () => {
     expect(data).toEqual([0]);
     batch(() => {
       ++state.count;
-    });
-    expect(data).toEqual([0, 1]);
-    batch(() => {
       ++state.count;
     });
-    expect(data).toEqual([0, 1, 2]);
+    expect(data).toEqual([0, 2]);
+    batch(() => {
+      ++state.count;
+      ++state.count;
+    });
+    expect(data).toEqual([0, 2, 4]);
     unwatch();
     batch(() => {
       ++state.count;
+      ++state.count;
     });
-    expect(data).toEqual([0, 1, 2]);
+    expect(data).toEqual([0, 2, 4]);
   });
 });

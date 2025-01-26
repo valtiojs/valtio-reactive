@@ -12,7 +12,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "valtio-reactive": ["./src/index.js"]
+      "valtio-reactive": ["./src/index.ts"]
     }
   },
   "exclude": ["dist", "examples"]

@@ -69,23 +69,23 @@ describe('watch', () => {
     const unwatch = watch(() => {
       fn(list.todos);
     });
-    list.todos["1"] = {
-      title: "Buy milk",
+    list.todos['1'] = {
+      title: 'Buy milk',
       completed: false,
     };
     expect(fn).toHaveBeenCalledTimes(2);
     expect(fn).toHaveBeenCalledWith({
-      "1": {
-        title: "Buy milk",
+      '1': {
+        title: 'Buy milk',
         completed: false,
       },
     });
-    list.todos["2"] = {
-      title: "Buy milk",
+    list.todos['2'] = {
+      title: 'Buy milk',
       completed: false,
     };
     expect(fn).toHaveBeenCalledTimes(3);
-    delete list.todos["1"];
+    delete list.todos['1'];
     expect(fn).toHaveBeenCalledTimes(4);
     unwatch();
   });
@@ -101,7 +101,7 @@ describe('watch', () => {
     state.items.push(2);
     expect(fn).toHaveBeenCalledTimes(3);
     unwatch();
-  })
+  });
 });
 
 describe('watch with batch', () => {

@@ -73,7 +73,7 @@ export function watch(fn: () => void): Unwatch {
       }
       return !Object.is(value, prevValue);
     });
-  }
+  };
 
   const callback = () => {
     if (Array.from(touchedKeys).some(([p, prev]) => isChanged(p, prev))) {
@@ -85,7 +85,9 @@ export function watch(fn: () => void): Unwatch {
       if (currentKeys.length !== prevKeys.size) {
         return true;
       }
-      return !Array.from(prevKeys).every((key) => currentKeys.includes(key as string));
+      return !Array.from(prevKeys).every((key) =>
+        currentKeys.includes(key as string),
+      );
     });
     if (keysChanged) {
       runFn();

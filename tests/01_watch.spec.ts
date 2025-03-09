@@ -44,6 +44,66 @@ describe('watch', () => {
     expect(data).toEqual([0, 1]);
     unwatch();
   });
+
+  it('should work arrays', async () => {
+    const state = proxy<{ items: number[] }>({ items: [] });
+    const data: number[] = [];
+    const unwatch = watch(() => {
+      data.push(state.items.length);
+    });
+    expect(data).toEqual([0]);
+    state.items.push(1);
+    expect(data).toEqual([0, 1]);
+    state.items.push(2);
+    expect(data).toEqual([0, 1, 2]);
+    unwatch();
+  });
+
+  it('should work with objects', async () => {
+    const fn = vi.fn();
+    const list = proxy<{
+      todos: Record<string, { title: string; completed: boolean }>;
+    }>({
+      todos: {},
+    });
+    const unwatch = watch(() => {
+      fn(list.todos);
+    });
+    list.todos["1"] = {
+      title: "Buy milk",
+      completed: false,
+    };
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenCalledWith({
+      "1": {
+        title: "Buy milk",
+        completed: false,
+      },
+    });
+    // list.todos["1"].completed = true;
+    // expect(fn).toHaveBeenCalledTimes(3);
+    list.todos["2"] = {
+      title: "Buy milk",
+      completed: false,
+    };
+    expect(fn).toHaveBeenCalledTimes(3);
+    delete list.todos["1"];
+    expect(fn).toHaveBeenCalledTimes(4);
+    unwatch();
+  });
+
+  it('should watch arrays for structure changes', async () => {
+    const fn = vi.fn();
+    const state = proxy<{ items: number[] }>({ items: [] });
+    const unwatch = watch(() => {
+      fn(state.items);
+    });
+    state.items.push(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    state.items.push(2);
+    expect(fn).toHaveBeenCalledTimes(3);
+    unwatch();
+  })
 });
 
 describe('watch with batch', () => {

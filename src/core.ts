@@ -62,9 +62,10 @@ export function watch(fn: () => void): Unwatch {
   const subscriptions = new Map<ProxyObject, Unsubscribe>();
   type PreviousKeyAndValue = Map<string | symbol, unknown>;
   const touchedKeys = new Map<ProxyObject, PreviousKeyAndValue>();
+  const touchedRootProxies = new Map<ProxyObject, Set<string | symbol>>();
 
-  const isChanged = (p: ProxyObject, prev: PreviousKeyAndValue): boolean =>
-    Array.from(prev).some(([key, prevValue]) => {
+  const isChanged = (p: ProxyObject, prev: PreviousKeyAndValue): boolean => {
+    return Array.from(prev).some(([key, prevValue]) => {
       const value: unknown = (p as never)[key];
       const prevOfValue = touchedKeys.get(value as ProxyObject);
       if (prevOfValue) {
@@ -72,9 +73,21 @@ export function watch(fn: () => void): Unwatch {
       }
       return !Object.is(value, prevValue);
     });
+  }
 
   const callback = () => {
     if (Array.from(touchedKeys).some(([p, prev]) => isChanged(p, prev))) {
+      runFn();
+      return;
+    }
+    const keysChanged = Array.from(touchedRootProxies).some(([p, prevKeys]) => {
+      const currentKeys = Object.keys(p);
+      if (currentKeys.length !== prevKeys.size) {
+        return true;
+      }
+      return !Array.from(prevKeys).every((key) => currentKeys.includes(key as string));
+    });
+    if (keysChanged) {
       runFn();
     }
   };
@@ -102,6 +115,7 @@ export function watch(fn: () => void): Unwatch {
 
   const runFn = () => {
     touchedKeys.clear();
+    touchedRootProxies.clear();
     const trapper = (target: object, p: string | symbol, receiver: unknown) => {
       if (!isProxy(receiver)) {
         return;
@@ -111,7 +125,11 @@ export function watch(fn: () => void): Unwatch {
         prev = new Map();
         touchedKeys.set(receiver, prev);
       }
-      prev.set(p, (target as never)[p]);
+      const value = (target as never)[p];
+      prev.set(p, value);
+      if (typeof value === 'object' && value !== null) {
+        touchedRootProxies.set(value, new Set(Object.keys(value)));
+      }
     };
     trappersForGet.add(trapper);
     try {

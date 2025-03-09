@@ -80,8 +80,6 @@ describe('watch', () => {
         completed: false,
       },
     });
-    // list.todos["1"].completed = true;
-    // expect(fn).toHaveBeenCalledTimes(3);
     list.todos["2"] = {
       title: "Buy milk",
       completed: false,

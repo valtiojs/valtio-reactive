@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- fix: watch for structural changes on objects and arrays #3
+
 ## [0.1.1] - 2024-11-22
 
 ### Changed

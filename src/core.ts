@@ -1,4 +1,5 @@
 import {
+  getVersion,
   subscribe,
   unstable_getInternalStates,
   unstable_replaceInternalFunction,
@@ -60,17 +61,26 @@ export function watch(fn: () => void): Unwatch {
   type ProxyObject = object;
   type Unsubscribe = () => void;
   const subscriptions = new Map<ProxyObject, Unsubscribe>();
-  type PreviousKeyAndValue = Map<string | symbol, unknown>;
-  const touchedKeys = new Map<ProxyObject, PreviousKeyAndValue>();
+  type PrevValue = [value: unknown, version: number | undefined];
+  type PrevValues = Map<string | symbol, PrevValue>;
+  const touchedKeys = new Map<ProxyObject, PrevValues>();
 
-  const isChanged = (p: ProxyObject, prev: PreviousKeyAndValue): boolean =>
+  const isChanged = (p: ProxyObject, prev: PrevValues): boolean =>
     Array.from(prev).some(([key, prevValue]) => {
       const value: unknown = (p as never)[key];
       const prevOfValue = touchedKeys.get(value as ProxyObject);
       if (prevOfValue) {
         return isChanged(value as ProxyObject, prevOfValue);
       }
-      return !Object.is(value, prevValue);
+      if (!Object.is(value, prevValue[0])) {
+        return true;
+      }
+      const version = getVersion(value);
+      const prevVersion = prevValue[1];
+      if (typeof version === 'number' && typeof prevVersion === 'number') {
+        return version !== prevVersion;
+      }
+      return false;
     });
 
   const callback = () => {
@@ -111,7 +121,8 @@ export function watch(fn: () => void): Unwatch {
         prev = new Map();
         touchedKeys.set(receiver, prev);
       }
-      prev.set(p, (target as never)[p]);
+      const v = Reflect.get(target, p, receiver);
+      prev.set(p, [v, getVersion(v)]);
     };
     trappersForGet.add(trapper);
     try {

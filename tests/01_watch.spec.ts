@@ -30,7 +30,10 @@ describe('watch', () => {
   });
 
   it('should work with nested object', async () => {
-    const state = proxy({ count: 0, nested: { count: 0, anotherCount: 0 } });
+    const state = proxy({
+      count: 0,
+      nested: { count: 0, anotherCount: 0, anotherObject: { count2: 0 } },
+    });
     const data: number[] = [];
     const unwatch = watch(() => {
       data.push(state.nested.count);
@@ -41,6 +44,8 @@ describe('watch', () => {
     ++state.count;
     expect(data).toEqual([0, 1]);
     ++state.nested.anotherCount;
+    expect(data).toEqual([0, 1]);
+    ++state.nested.anotherObject.count2;
     expect(data).toEqual([0, 1]);
     unwatch();
   });

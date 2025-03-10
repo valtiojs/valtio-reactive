@@ -72,12 +72,15 @@ export function watch(fn: () => void): Unwatch {
       if (prevOfValue) {
         return isChanged(value as ProxyObject, prevOfValue);
       }
+      if (!Object.is(value, prevValue[0])) {
+        return true;
+      }
       const version = getVersion(value);
       const prevVersion = prevValue[1];
       if (typeof version === 'number' && typeof prevVersion === 'number') {
         return version !== prevVersion;
       }
-      return !Object.is(value, prevValue[0]);
+      return false;
     });
 
   const callback = () => {

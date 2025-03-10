@@ -45,7 +45,7 @@ describe('watch', () => {
     unwatch();
   });
 
-  it('should work arrays', async () => {
+  it('should work with arrays', async () => {
     const state = proxy<{ items: number[] }>({ items: [] });
     const data: number[] = [];
     const unwatch = watch(() => {
@@ -62,31 +62,29 @@ describe('watch', () => {
   it('should work with objects', async () => {
     const fn = vi.fn();
     const list = proxy<{
-      todos: Record<string, { title: string; completed: boolean }>;
+      todos: Record<string, { title: string }>;
     }>({
       todos: {},
     });
     const unwatch = watch(() => {
       fn(list.todos);
     });
-    list.todos['1'] = {
-      title: 'Buy milk',
-      completed: false,
-    };
-    expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn).toHaveBeenCalledWith({
-      '1': {
-        title: 'Buy milk',
-        completed: false,
-      },
+    fn.mockClear();
+    list.todos['1'] = { title: 'Buy milk' };
+    expect(fn).toHaveBeenCalledExactlyOnceWith({
+      '1': { title: 'Buy milk' },
     });
-    list.todos['2'] = {
-      title: 'Buy milk',
-      completed: false,
-    };
-    expect(fn).toHaveBeenCalledTimes(3);
+    fn.mockClear();
+    list.todos['2'] = { title: 'Buy coffee' };
+    expect(fn).toHaveBeenCalledExactlyOnceWith({
+      '1': { title: 'Buy milk' },
+      '2': { title: 'Buy coffee' },
+    });
+    fn.mockClear();
     delete list.todos['1'];
-    expect(fn).toHaveBeenCalledTimes(4);
+    expect(fn).toHaveBeenCalledExactlyOnceWith({
+      '2': { title: 'Buy coffee' },
+    });
     unwatch();
   });
 
@@ -96,10 +94,15 @@ describe('watch', () => {
     const unwatch = watch(() => {
       fn(state.items);
     });
+    fn.mockClear();
     state.items.push(1);
-    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenCalledExactlyOnceWith([1]);
+    fn.mockClear();
     state.items.push(2);
-    expect(fn).toHaveBeenCalledTimes(3);
+    expect(fn).toHaveBeenCalledExactlyOnceWith([1, 2]);
+    fn.mockClear();
+    state.items.shift();
+    expect(fn).toHaveBeenLastCalledWith([2]);
     unwatch();
   });
 });

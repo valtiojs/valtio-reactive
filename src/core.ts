@@ -1,4 +1,5 @@
 import {
+  getVersion,
   subscribe,
   unstable_getInternalStates,
   unstable_replaceInternalFunction,
@@ -60,36 +61,27 @@ export function watch(fn: () => void): Unwatch {
   type ProxyObject = object;
   type Unsubscribe = () => void;
   const subscriptions = new Map<ProxyObject, Unsubscribe>();
-  type PreviousKeyAndValue = Map<string | symbol, unknown>;
-  const touchedKeys = new Map<ProxyObject, PreviousKeyAndValue>();
-  const touchedRootProxies = new Map<ProxyObject, Set<string | symbol>>();
+  type PrevValue = [value: unknown, version: number | undefined];
+  type PrevValues = Map<string | symbol, PrevValue>;
+  const touchedKeys = new Map<ProxyObject, PrevValues>();
 
-  const isChanged = (p: ProxyObject, prev: PreviousKeyAndValue): boolean => {
-    return Array.from(prev).some(([key, prevValue]) => {
+  const isChanged = (p: ProxyObject, prev: PrevValues): boolean =>
+    Array.from(prev).some(([key, prevValue]) => {
       const value: unknown = (p as never)[key];
       const prevOfValue = touchedKeys.get(value as ProxyObject);
       if (prevOfValue) {
         return isChanged(value as ProxyObject, prevOfValue);
       }
-      return !Object.is(value, prevValue);
+      const version = getVersion(value);
+      const prevVersion = prevValue[1];
+      if (typeof version === 'number' && typeof prevVersion === 'number') {
+        return version !== prevVersion;
+      }
+      return !Object.is(value, prevValue[0]);
     });
-  };
 
   const callback = () => {
     if (Array.from(touchedKeys).some(([p, prev]) => isChanged(p, prev))) {
-      runFn();
-      return;
-    }
-    const keysChanged = Array.from(touchedRootProxies).some(([p, prevKeys]) => {
-      const currentKeys = Object.keys(p);
-      if (currentKeys.length !== prevKeys.size) {
-        return true;
-      }
-      return !Array.from(prevKeys).every((key) =>
-        currentKeys.includes(key as string),
-      );
-    });
-    if (keysChanged) {
       runFn();
     }
   };
@@ -117,7 +109,6 @@ export function watch(fn: () => void): Unwatch {
 
   const runFn = () => {
     touchedKeys.clear();
-    touchedRootProxies.clear();
     const trapper = (target: object, p: string | symbol, receiver: unknown) => {
       if (!isProxy(receiver)) {
         return;
@@ -127,11 +118,8 @@ export function watch(fn: () => void): Unwatch {
         prev = new Map();
         touchedKeys.set(receiver, prev);
       }
-      const value = (target as never)[p];
-      prev.set(p, value);
-      if (typeof value === 'object' && value !== null) {
-        touchedRootProxies.set(value, new Set(Object.keys(value)));
-      }
+      const v = Reflect.get(target, p, receiver);
+      prev.set(p, [v, getVersion(v)]);
     };
     trappersForGet.add(trapper);
     try {

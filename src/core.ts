@@ -90,23 +90,18 @@ export function watch(fn: () => void): Unwatch {
   };
 
   const subscribeProxies = () => {
-    const rootTouchedProxies = new Set<ProxyObject>();
-    for (const p of touchedKeys.keys()) {
-      // FIXME this isn't very efficient.
-      if (Object.values(p).every((v) => !touchedKeys.has(v))) {
-        rootTouchedProxies.add(p);
-      }
-    }
     for (const [p, unsub] of subscriptions) {
-      if (rootTouchedProxies.has(p)) {
-        rootTouchedProxies.delete(p);
-      } else {
+      if (!touchedKeys.has(p)) {
         unsub();
+        subscriptions.delete(p);
       }
     }
-    for (const p of rootTouchedProxies) {
-      const unsub = subscribe(p, () => registerCallback(callback), true);
-      subscriptions.set(p, unsub);
+
+    for (const p of touchedKeys.keys()) {
+      if (!subscriptions.has(p)) {
+        const unsub = subscribe(p, () => registerCallback(callback), true);
+        subscriptions.set(p, unsub);
+      }
     }
   };
 

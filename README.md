@@ -33,7 +33,7 @@ This runs the first function (`fn`) immediately and re-runs it whenever any of t
 import { proxy } from 'valtio/vanilla';
 import { effect } from 'valtio-reactive';
 
-const state = proxy({ 
+const state = proxy({
   count: 0,
   unrelated: 'hello'
   user: {
@@ -42,7 +42,7 @@ const state = proxy({
     },
     name: 'Bob'
   },
-  
+
 })
 
 const dispose = effect(
@@ -50,18 +50,18 @@ const dispose = effect(
     console.log('count is: ', state.count)
     console.log('theme is: ', state.user.settings.theme)
   },
-  () => { 
+  () => {
     // optional cleanup function
     console.log('cleaning up')
-  }  
+  }
 )
-// immediately logs: 
+// immediately logs:
 // "count is: 0"
 // "theme is: light'
 state.count++
 // logs:
 // "count is: 1"
-// "theme is: light" 
+// "theme is: light"
 state.unrelated = 'world' // nothing happens when this property is changed because it wasn't accessed
 state.user.name = 'Robert' // nothing happens
 
@@ -127,7 +127,6 @@ console.log(derived.quadruple); // 20
 
 The returned object is itself a `valtio` proxy, so you can use it with `effect`, `useSnapshot`, or any other `valtio` utility.
 
-
 ---
 
 ## Usage with React
@@ -181,7 +180,6 @@ const derived = computed({
 derived.double; // number
 derived.message; // string
 ```
-
 
 ## License
 

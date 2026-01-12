@@ -5,16 +5,15 @@
 [![size](https://img.shields.io/bundlephobia/minzip/valtio-reactive)](https://bundlephobia.com/result?p=valtio-reactive)
 [![discord](https://img.shields.io/discord/627656437971288081)](https://discord.gg/MrQdmzd)
 
-Reactive primitives for [Valtio](https://github.com/pmndrs/valtio) — adds `watch`, `computed`, `effect`, and `batch` to enable fine-grained reactivity outside of React.
+Reactive primitives for [valtio](https://github.com/pmndrs/valtio) — adds, `computed`, `effect`, and `batch` to enable fine-grained reactivity outside of React.
 
 ## Motivation
 
-Valtio excels at making state management simple with its proxy-based approach. However, its reactive capabilities are primarily designed for React via `useSnapshot`. This library extends Valtio with framework-agnostic reactive primitives, enabling you to:
+`valtio`'s reactive capabilities are primarily designed for React via `useSnapshot` and only has limited support for computed values. `valtio-reactive` was made to fill those gaps while keeping `valtio` lean and fast.
 
 - Run side effects when specific properties change (not just any change)
 - Create derived/computed state that automatically updates
 - Batch multiple updates into a single reaction
-- Use Valtio's reactivity in vanilla JS, Node.js, or any framework
 
 See the [original discussion](https://github.com/pmndrs/valtio/discussions/949) for more context.
 
@@ -26,70 +25,53 @@ npm install valtio valtio-reactive
 
 ## API
 
-### `watch(fn): Unwatch`
+### `effect(fn, cleanup?): Dispose
 
-Runs a function immediately and re-runs it whenever any accessed proxy state changes. Only the properties actually read during execution are tracked — changes to unread properties won't trigger re-runs.
+This runs the first function (`fn`) immediately and re-runs it whenever any of the properties that are accessed in that function change. Only the properties are actually read during execution are tracked — changes to unread properties won't trigger re-runs. It returns a `dispose` function that will run the cleanup function when called.
 
 ```ts
 import { proxy } from 'valtio/vanilla';
-import { unstable_watch as watch } from 'valtio-reactive';
+import { effect } from 'valtio-reactive';
 
-const state = proxy({ count: 0, unrelated: 'hello' });
+const state = proxy({ 
+  count: 0,
+  unrelated: 'hello'
+  user: {
+    settings: {
+      theme: 'light' //
+    },
+    name: 'Bob'
+  },
+  
+})
 
-const unwatch = watch(() => {
-  console.log('count is:', state.count);
-});
-// Logs: "count is: 0"
+const dispose = effect(
+  () => {
+    console.log('count is: ', state.count)
+    console.log('theme is: ', state.user.settings.theme)
+  },
+  () => { 
+    // optional cleanup function
+    console.log('cleaning up')
+  }  
+)
+// immediately logs: 
+// "count is: 0"
+// "theme is: light'
+state.count++
+// logs:
+// "count is: 1"
+// "theme is: light" 
+state.unrelated = 'world' // nothing happens when this property is changed because it wasn't accessed
+state.user.name = 'Robert' // nothing happens
 
-state.count = 1;
-// Logs: "count is: 1"
+state.user.settings.theme = 'dark'
+// logs:
+// "count is: 1"
+// "theme is: dark"
 
-state.unrelated = 'world';
-// Nothing logged — `unrelated` wasn't accessed in the watch fn
-
-unwatch(); // Stop watching
-```
-
-#### Nested Objects and Arrays
-
-`watch` automatically tracks nested property access:
-
-```ts
-const state = proxy({
-  user: { name: 'Alice', settings: { theme: 'dark' } },
-  items: [],
-});
-
-watch(() => {
-  console.log('theme:', state.user.settings.theme);
-});
-
-state.user.settings.theme = 'light'; // Triggers
-state.user.name = 'Bob'; // Does NOT trigger
-
-watch(() => {
-  console.log('item count:', state.items.length);
-});
-
-state.items.push('new item'); // Triggers
-```
-
-#### Structural Changes
-
-`watch` detects structural changes to objects and arrays (additions, deletions, reordering):
-
-```ts
-const state = proxy<{ todos: Record<string, { title: string }> }>({
-  todos: {},
-});
-
-watch(() => {
-  console.log('todos:', state.todos);
-});
-
-state.todos['1'] = { title: 'Buy milk' }; // Triggers
-state.todos['2'] = { title: 'Buy coffee' }; // Triggers
-delete state.todos['1']; // Triggers
+dispose()
+// logs "cleaning up"
 ```
 
 ---
@@ -143,41 +125,14 @@ console.log(derived.double); // 10
 console.log(derived.quadruple); // 20
 ```
 
-The returned object is itself a Valtio proxy, so you can use it with `watch`, `useSnapshot`, or any other Valtio utility.
+The returned object is itself a `valtio` proxy, so you can use it with `effect`, `useSnapshot`, or any other `valtio` utility.
 
----
-
-### `effect(fn, cleanup?): Dispose`
-
-A convenience wrapper around `watch` that supports an optional cleanup function. The cleanup runs when the effect is disposed.
-
-```ts
-import { proxy } from 'valtio/vanilla';
-import { effect } from 'valtio-reactive';
-
-const state = proxy({ userId: 1 });
-
-const dispose = effect(
-  () => {
-    console.log('Fetching user:', state.userId);
-    // Imagine starting a fetch here...
-  },
-  () => {
-    console.log('Cleaning up...');
-    // Cancel pending requests, etc.
-  },
-);
-
-state.userId = 2; // Re-runs effect
-
-dispose(); // Stops watching and runs cleanup
-```
 
 ---
 
 ## Usage with React
 
-While these primitives are framework-agnostic, they integrate seamlessly with Valtio's React bindings:
+While these primitives are framework-agnostic, they integrate seamlessly with `valtio`'s React bindings:
 
 ```tsx
 import { proxy, useSnapshot } from 'valtio';
@@ -191,7 +146,7 @@ const derived = computed({
 });
 
 // Side effects outside of React
-watch(() => {
+effect(() => {
   console.log('Count changed:', state.count);
 });
 
@@ -227,33 +182,6 @@ derived.double; // number
 derived.message; // string
 ```
 
----
-
-## API Stability
-
-| Export           | Status   |
-| ---------------- | -------- |
-| `batch`          | Stable   |
-| `computed`       | Stable   |
-| `effect`         | Stable   |
-| `unstable_watch` | Unstable |
-
-The `watch` function is exported as `unstable_watch` to indicate its API may change. The core functionality is solid, but the exact behavior around edge cases may be refined.
-
----
-
-## How It Works
-
-`valtio-reactive` hooks into Valtio's internal proxy handler to track which properties are accessed during a `watch` callback. It then subscribes only to the relevant proxies and re-runs the callback when those specific values change.
-
-Key implementation details:
-
-- Uses Valtio's `unstable_replaceInternalFunction` to intercept property access
-- Tracks accessed properties and their versions to detect changes
-- Compares values and versions to avoid unnecessary re-runs
-- Supports nested proxies with proper subscription management
-
----
 
 ## License
 

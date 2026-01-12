@@ -110,6 +110,54 @@ describe('watch', () => {
     expect(fn).toHaveBeenLastCalledWith([2]);
     unwatch();
   });
+
+  it('should watch primitive properties on parent when child is also watched', async () => {
+    const state = proxy({
+      count: 0,
+      nested: { text: 'hello' },
+    });
+    const fn = vi.fn();
+
+    const unwatch = watch(() => {
+      void state.count;
+      void state.nested.text;
+      fn();
+    });
+
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    state.count++;
+    await new Promise<void>((r) => setTimeout(r));
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    state.nested.text = 'world';
+    await new Promise<void>((r) => setTimeout(r));
+    expect(fn).toHaveBeenCalledTimes(3);
+
+    unwatch();
+  });
+
+  it('should handle object replacement when watching nested properties', async () => {
+    const state = proxy({
+      nested: { text: 'initial' },
+    });
+    const fn = vi.fn();
+
+    const unwatch = watch(() => {
+      fn(state.nested.text);
+    });
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenLastCalledWith('initial');
+
+    state.nested = { text: 'replaced' };
+    await new Promise<void>((r) => setTimeout(r));
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenLastCalledWith('replaced');
+
+    unwatch();
+  });
 });
 
 describe('watch with batch', () => {

@@ -78,15 +78,15 @@ dispose()
 
 ### `batch(fn): T`
 
-Batches multiple state changes so that watchers only react once after all changes complete. Returns the value returned by `fn`.
+Batches multiple state changes so that effects only react once after all changes complete. Returns the value returned by `fn`.
 
 ```ts
 import { proxy } from 'valtio/vanilla';
-import { batch, unstable_watch as watch } from 'valtio-reactive';
+import { batch, effect } from 'valtio-reactive';
 
 const state = proxy({ count: 0 });
 
-watch(() => {
+effect(() => {
   console.log('count:', state.count);
 });
 // Logs: "count: 0"
@@ -135,7 +135,7 @@ While these primitives are framework-agnostic, they integrate seamlessly with `v
 
 ```tsx
 import { proxy, useSnapshot } from 'valtio';
-import { unstable_watch as watch, computed } from 'valtio-reactive';
+import { effect, computed } from 'valtio-reactive';
 
 const state = proxy({ count: 0 });
 

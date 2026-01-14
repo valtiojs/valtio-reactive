@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { proxy } from 'valtio';
-import { batch, unstable_watch as watch } from 'valtio-reactive';
+import { batch } from 'valtio-reactive';
+import { watch } from '../src/core.js';
 
 describe('watch', () => {
   it('should run function initially', async () => {

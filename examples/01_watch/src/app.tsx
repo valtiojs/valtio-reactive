@@ -1,9 +1,9 @@
 import { proxy, useSnapshot } from 'valtio';
-import { unstable_watch as watch } from 'valtio-reactive';
+import { effect } from 'valtio-reactive';
 
 const state = proxy({ count: 0 });
 
-watch(() => {
+effect(() => {
   console.log(state.count);
 });
 

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-14
+
+### Changed
+
+- fix(core): fixed subscribeProxies function #5
+- fix: removed watch from export #7
+
 ## [0.1.2] - 2025-03-10
 
 ### Changed

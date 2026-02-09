@@ -127,6 +127,39 @@ console.log(derived.quadruple); // 20
 
 The returned object is itself a `valtio` proxy, so you can use it with `effect`, `useSnapshot`, or any other `valtio` utility.
 
+<details>
+<summary> Note: Specific behavior <code>computed()</code> when mutating proxied array </summary>
+
+When a `computed()` getter depends on a proxied array, in-place mutations like `splice`/`shift`/`pop` can briefly expose `empty`/`undefined` during the same tick. If you iterate the array with `for of`/`find`/`findIndex` , etc. in `computed()`, wrap these mutations in `batch(() => ...)` to keep derived reads consistent.
+
+```ts
+import { proxy } from 'valtio/vanilla';
+import { computed, batch } from 'valtio-reactive';
+
+const selectedId = 1;
+const state = proxy({ list: [
+  {id: 1},
+  {id: 2},
+  {id: 3}
+]});
+
+const derived = computed({
+  selected: () => state.list.find(item => item.id === selectedId),
+});
+
+console.log(derived.selected); // {id: 1}
+
+// Bad: in derived.selected --> Will throw an error "TypeError: Cannot read properties of undefined (reading 'id')"
+state.list.splice(0, 1); 
+
+// Good
+batch(() => state.list.splice(0, 1)); 
+
+console.log(derived.selected); // undefined
+
+```
+</details>
+
 ---
 
 ## Usage with React

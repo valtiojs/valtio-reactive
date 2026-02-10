@@ -137,27 +137,23 @@ import { proxy } from 'valtio/vanilla';
 import { computed, batch } from 'valtio-reactive';
 
 const selectedId = 1;
-const state = proxy({ list: [
-  {id: 1},
-  {id: 2},
-  {id: 3}
-]});
+const state = proxy({ list: [{ id: 1 }, { id: 2 }, { id: 3 }] });
 
 const derived = computed({
-  selected: () => state.list.find(item => item.id === selectedId),
+  selected: () => state.list.find((item) => item.id === selectedId),
 });
 
 console.log(derived.selected); // {id: 1}
 
 // Bad: in derived.selected --> Will throw an error "TypeError: Cannot read properties of undefined (reading 'id')"
-state.list.splice(0, 1); 
+state.list.splice(0, 1);
 
 // Good
-batch(() => state.list.splice(0, 1)); 
+batch(() => state.list.splice(0, 1));
 
 console.log(derived.selected); // undefined
-
 ```
+
 </details>
 
 ---
